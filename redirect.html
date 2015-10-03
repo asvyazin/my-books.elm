@@ -1,0 +1,43 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MyBooks</title>
+
+<!--    <link rel="apple-touch-icon" href="apple-touch-icon.png"> -->
+    <!-- Place favicon.ico in the root directory -->
+  </head>
+  <body>
+    <!--[if lt IE 10]>
+      <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+      <![endif]-->
+    
+    <script src="/bower_components/pouchdb/dist/pouchdb.min.js"></script>
+    <script src="/bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="/js/db.js"></script>
+    <script src="/js/config.js"></script>
+
+    <script>      
+    function parseQuery(str) {
+        var result = {};
+        var vars = str.split("&");
+        for (var i = 0; i < vars.length; i++) {
+            var pair = vars[i].split("=");
+            result[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
+        }
+        return result;
+    }
+
+    $(function () {
+        var query = parseQuery(window.location.hash.substring(1));
+        if (query.access_token) {
+            config.put("onedriveAccessToken", query.access_token).then(function (response) {
+                window.location = "/main.html";
+            });
+        }
+    });
+    </script>
+  </body>
+</html>

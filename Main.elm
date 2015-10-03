@@ -8,7 +8,10 @@ import Task
 import Header
 
 
-app = start { init = (Header.init "Title" "123"), update = Header.update, view = view, inputs = [] }
+port accessToken : Signal (Maybe String)
+
+
+app = start { init = (Header.init "Title"), update = Header.update, view = view, inputs = [Signal.map Header.AccessTokenReceived accessToken] }
 
 
 main : Signal Html.Html

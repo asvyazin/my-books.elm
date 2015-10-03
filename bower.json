@@ -1,0 +1,23 @@
+{
+  "name": "MyBooks.elm",
+  "version": "0.1.0",
+  "authors": [
+    "Alexander Svyazin <guybrush@live.ru>"
+  ],
+  "description": "MyBooks site. Elm version.",
+  "license": "MIT",
+  "homepage": "https://github.com/asvyazin/my-books.elm",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "pouchdb": "~4.0.3",
+    "jquery": "~2.1.4",
+    "bootstrap": "~3.3.5",
+    "bootstrap-treeview": "~1.2.0"
+  }
+}

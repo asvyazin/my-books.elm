@@ -1,4 +1,4 @@
-module Header (Model, Action, init, update, view) where
+module Header (Model, Action(..), init, update, view) where
 
 
 import Effects exposing (Effects)
@@ -18,6 +18,7 @@ type alias Model =
 
 
 type Action =
+  AccessTokenReceived (Maybe String) |
   UserNameReceived String |
   ErrorReceived String
 
@@ -25,6 +26,7 @@ type Action =
 update : Action -> Model -> (Model, Effects Action)
 update action model =
   case action of
+    AccessTokenReceived accessToken -> (model, getUserName accessToken)
     UserNameReceived user -> ({model | userName <- Just user}, Effects.none)
     ErrorReceived error -> ({model | error <- Just error}, Effects.none)
 
@@ -47,7 +49,7 @@ view model = navbarDefault_
   , ul' { class = "nav navbar-nav" }
     [
      li_
-         [ a_ "/Login.elm" "Get new access token" ]
+         [ a_ "/login.html" "Get new access token" ]
     ]
   , ul' { class = "nav navbar-nav navbar-right" }
     (List.append
@@ -64,12 +66,17 @@ renderError : String -> Html
 renderError error = li_ [ div' { class = "alert alert-danger" } [text error] ]
 
 
-init : String -> String -> (Model, Effects Action)
-init title accessToken = (Model title Nothing Nothing, getUserName accessToken)
+init : String -> (Model, Effects Action)
+init title = (Model title Nothing Nothing, Effects.none)
 
 
-getUserName : String -> Effects Action
+getUserName : Maybe String -> Effects Action
 getUserName accessToken =
+  Maybe.withDefault Effects.none (Maybe.map doGetUserName accessToken)
+             
+
+doGetUserName : String -> Effects Action
+doGetUserName accessToken =
   Http.get (Json.at ["name"] Json.string) (userNameUrl accessToken)
     |> Task.toResult
     |> Task.map (Result.formatError convertError)

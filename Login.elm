@@ -59,7 +59,7 @@ loginPage model =
   in MasterPage.view [Header.view model, buttonContainer]
 
 
-app = start { init = (Header.init "Title" "123"), update = Header.update, view = view, inputs = [] }
+app = start { init = (Header.init "Title"), update = Header.update, view = view, inputs = [] }
 
 
 main : Signal Html
