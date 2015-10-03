@@ -1,4 +1,6 @@
 *~
 elm-stuff
 elm.js
-bower_components
+jspm_packages
+node_modules
+config.js

@@ -1,0 +1,23 @@
+{
+  "name": "my-books.elm",
+  "version": "0.1.0",
+  "description": "Experiments with Elm.",
+  "author": "Alexander Svyazin <guybrush@live.ru>",
+  "devDependencies": {
+    "jspm": "^0.16.11"
+  },
+  "jspm": {
+    "dependencies": {
+      "bootstrap": "github:twbs/bootstrap@^3.3.5",
+      "css": "github:systemjs/plugin-css@^0.1.18",
+      "jonmiles/bootstrap-treeview": "github:jonmiles/bootstrap-treeview@^1.2.0",
+      "jquery": "github:components/jquery@^2.1.4",
+      "pouchdb": "npm:pouchdb@^4.0.3"
+    },
+    "devDependencies": {
+      "babel": "npm:babel-core@^5.8.24",
+      "babel-runtime": "npm:babel-runtime@^5.8.24",
+      "core-js": "npm:core-js@^1.1.4"
+    }
+  }
+}

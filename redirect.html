@@ -14,30 +14,11 @@
       <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
       <![endif]-->
     
-    <script src="/bower_components/pouchdb/dist/pouchdb.min.js"></script>
-    <script src="/bower_components/jquery/dist/jquery.min.js"></script>
-    <script src="/js/db.js"></script>
-    <script src="/js/config.js"></script>
-
-    <script>      
-    function parseQuery(str) {
-        var result = {};
-        var vars = str.split("&");
-        for (var i = 0; i < vars.length; i++) {
-            var pair = vars[i].split("=");
-            result[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
-        }
-        return result;
-    }
-
-    $(function () {
-        var query = parseQuery(window.location.hash.substring(1));
-        if (query.access_token) {
-            config.put("onedriveAccessToken", query.access_token).then(function (response) {
-                window.location = "/main.html";
-            });
-        }
-    });
+    <script src="/jspm_packages/system.js"></script>
+    <script src="/config.js"></script>
+    <script src="Elm.js"></script>
+    <script>
+      System.import("lib/redirect.js");
     </script>
   </body>
 </html>
