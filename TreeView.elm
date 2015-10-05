@@ -2,6 +2,8 @@ module TreeView where
 
 import Effects exposing (Effects, Never)
 import Html
+import Html.Attributes as A
+import Html.Events exposing (onClick)
 import Html.Shorthand exposing (..)
 import Maybe exposing (andThen)
 import Task exposing (Task)
@@ -72,16 +74,9 @@ view address model =
         renderFolderGlyphicon c =
           let
             doRenderFolderGlyphicon id =
-              [buttonLink' (folderButtonParams id) [glyphicon_ c]]
+              [Html.a [ A.href "javascript:;", onClick address (ToggleExpanded id) ] [glyphicon_ c]]
           in
             Maybe.map doRenderFolderGlyphicon x.id
-
-        folderButtonParams id =
-          { class = ""
-          , update =
-            { onClick = Signal.message address (ToggleExpanded id)
-            }
-          }
 
         glyphicon =
           Maybe.withDefault [] (Maybe.map renderGlyphicon x.glyphicon)
