@@ -93,7 +93,7 @@ view address model =
           model.viewElement x.content
 
         contentWrap =
-          Maybe.withDefault div_ (Maybe.map linkWrap x.href)
+          Maybe.withDefault span_ (Maybe.map linkWrap x.href)
 
         linkWrap href =
           a' { href = href, class = "" }
@@ -110,7 +110,7 @@ view address model =
         (elemHtml :: childrenHtml)
             
   in
-    ul' { class = "list-group" } (List.concatMap (viewTreeItem 0) model.elements)
+    ul' { class = "list-group treeview" } (List.concatMap (viewTreeItem 0) model.elements)
 
 
 update : Action a b -> TreeModel a b -> (TreeModel a b, Effects (Action a b))
@@ -118,6 +118,7 @@ update action model =
   case action of
     ToggleExpanded id ->
       let
+        -- itemToggleExpanded : TreeItemModel a b -> (TreeItemModel a b, Maybe (Effects Action))
         itemToggleExpanded (TreeItemModel element) =
           if element.id == Just id
           then
@@ -137,7 +138,22 @@ update action model =
                              , children <- newChildren
                              }, eff)
           else
-            (TreeItemModel element, Nothing)
+            let
+              -- childrenElementsAndEffects : Maybe (List (TreeItemModel a b, Maybe (Effects Action)))
+              childrenElementsAndEffects =
+                Maybe.map (List.map itemToggleExpanded) element.children
+
+              -- newChildren : Maybe (List (TreeItemModel a b))
+              newChildren =
+                Maybe.map (List.map fst) childrenElementsAndEffects
+
+              -- childrenEff : Maybe (Effects Action)
+              childrenEff =
+                childrenElementsAndEffects `Maybe.andThen` (\x -> Maybe.oneOf (List.map snd x))
+            in
+              (TreeItemModel { element |
+                               children <- newChildren
+                             }, childrenEff)
 
         elementsAndEffects =
           List.map itemToggleExpanded model.elements
@@ -152,14 +168,18 @@ update action model =
                    
       in
         (newModel, newEffects)
+        
     ChildrenLoaded id children ->
       let
         itemChildrenLoaded (TreeItemModel element) =
-          case element.id of
-            Just id ->
-              TreeItemModel { element | children <- Just children }
-            _ ->
-              TreeItemModel element
+          let
+            newChildren =
+              if element.id == Just id
+              then Just children
+              else
+                Maybe.map (List.map itemChildrenLoaded) element.children
+          in
+            TreeItemModel { element | children <- newChildren }
         
         newModel =
           { model | elements <- List.map itemChildrenLoaded model.elements }
