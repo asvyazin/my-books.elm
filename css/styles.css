@@ -2,3 +2,11 @@
     margin-left: 10px;
     margin-right: 10px
 }
+
+.treeview li:hover {
+    background-color: #a0a0a0
+}
+
+.treeview .expand-folder {
+    cursor: pointer
+}

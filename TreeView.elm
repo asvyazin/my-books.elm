@@ -6,6 +6,7 @@ import Html.Attributes as A
 import Html.Events exposing (onClick)
 import Html.Shorthand exposing (..)
 import Maybe exposing (andThen)
+import MyAttributes
 import Task exposing (Task)
 
 
@@ -74,7 +75,7 @@ view address model =
         renderFolderGlyphicon c =
           let
             doRenderFolderGlyphicon id =
-              [Html.a [ A.href "javascript:;", onClick address (ToggleExpanded id) ] [glyphicon_ c]]
+              [ Html.span [ class' "expand-folder", onClick address (ToggleExpanded id) ] [ glyphicon_ c, Html.text " " ] ]
           in
             Maybe.map doRenderFolderGlyphicon x.id
 
