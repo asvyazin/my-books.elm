@@ -10,3 +10,7 @@
 .treeview .expand-folder {
     cursor: pointer
 }
+
+.treeview li.selected {
+    background-color: #777
+}

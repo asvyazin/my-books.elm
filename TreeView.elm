@@ -1,183 +1,152 @@
-module TreeView where
+module TreeView (ViewContext, Action, TreeModel, TreeItemModel, TreeItemParams, item, folderItem, view, update) where
 
 import Effects exposing (Effects, Never)
-import Html
+import EffectsExtensions as Effects
+import Html exposing (Html)
 import Html.Attributes as A
 import Html.Events exposing (onClick)
 import Html.Shorthand exposing (..)
 import Maybe exposing (andThen)
+import MaybeExtensions as Maybe
 import MyAttributes
 import Task exposing (Task)
+import Tree
 
 
-type Action a b
-  = ToggleExpanded b
-  | ChildrenLoaded b (List (TreeItemModel a b))
+type Action b = Select b
 
 
-type alias TreeModel a b =
-  { title : String
-  , elements : List (TreeItemModel a b)
-  , viewElement : a -> Html.Html
-  , loadingPlaceholder : a
-  , loadChildren : b -> Task Never (List (TreeItemModel a b))
+type alias ViewContext a b =
+  { actions : Signal.Address (Action b)
+  , expand : Signal.Address b
+  , viewContent : a -> Html
   }
 
 
-type TreeItemModel a b = TreeItemModel
-  { content : a
+type alias TreeModel a b = Tree.Forest (TreeItemModel a b)
+
+
+type alias TreeItemModel a b =
+  { params : TreeItemParams a b
+  , expandable : Bool
+  , expanded : Bool
+  , selectable : Bool
+  , selected : Bool 
+  }
+
+
+type alias TreeItemParams a b =
+  { id : b
+  , content : a
   , glyphicon : Maybe String
   , href : Maybe String
-  , hasChildren : Bool
-  , expanded : Bool
-  , children : Maybe (List (TreeItemModel a b))
-  , id : Maybe b
   }
 
 
-loadingPlaceholderTreeItemModel : a -> TreeItemModel a b
-loadingPlaceholderTreeItemModel placeholder =
-  TreeItemModel
-  { content = placeholder
-  , glyphicon = Nothing
-  , href = Nothing
-  , hasChildren = False
+item : TreeItemParams a b -> TreeItemModel a b
+item p = initItem p False False
+
+
+folderItem : TreeItemParams a b -> TreeItemModel a b
+folderItem p = initItem p True True
+
+
+initItem : TreeItemParams a b -> Bool -> Bool -> TreeItemModel a b
+initItem p expandable selectable =
+  { params = p
+  , expandable = expandable 
   , expanded = False
-  , children = Nothing
-  , id = Nothing
+  , selectable = selectable
+  , selected = False
   }
 
 
-glyphicon_ : String -> Html.Html
+glyphicon_ : String -> Html
 glyphicon_ icon = span' { class = "glyphicon glyphicon-" ++ icon } []
 
 
-view : Signal.Address (Action a b) -> TreeModel a b -> Html.Html
-view address model =
+view : ViewContext a b -> TreeModel a b -> Html
+view context model =
   let
-    -- viewTreeItem : Int -> TreeItemModel a -> List Html.Html
-    viewTreeItem indent (TreeItemModel x) =
+    -- viewTree : Int -> Tree.Tree (TreeItemMode a b) -> List Html
+    viewTree indent (Tree.Tree item) =
       let
-        indentElems =
-          List.repeat indent (span' { class = "indent" } [])
+        x = item.data
+        
+        folderGlyphiconHtml =
+          folderGlyphiconView context x
+            |> Maybe.toList
 
-        folderGlyphiconClass =
-          if not x.hasChildren
-          then Nothing
-          else
-            if x.expanded
-            then Just "minus"
-            else Just "plus"
+        glyphiconHtml =
+          Maybe.map glyphicon_ x.params.glyphicon
+            |> Maybe.toList
 
-        folderGlyphicon =
-          Maybe.withDefault [] (folderGlyphiconClass `andThen` renderFolderGlyphicon)
-
-        renderFolderGlyphicon c =
-          let
-            doRenderFolderGlyphicon id =
-              [ Html.span [ class' "expand-folder", onClick address (ToggleExpanded id) ] [ glyphicon_ c, Html.text " " ] ]
-          in
-            Maybe.map doRenderFolderGlyphicon x.id
-
-        glyphicon =
-          Maybe.withDefault [] (Maybe.map renderGlyphicon x.glyphicon)
-
-        renderGlyphicon icon =
-          [glyphicon_ icon]
-
-        content =
-          model.viewElement x.content
+        contentHtml =
+          context.viewContent x.params.content
 
         contentWrap =
-          Maybe.withDefault span_ (Maybe.map linkWrap x.href)
+          Maybe.withDefault span_ (Maybe.map linkWrap x.params.href)
 
         linkWrap href =
           a' { href = href, class = "" }
 
+        elemClass =
+          A.classList [("list-group-item", True), ("selected", x.selected)]
+
+        elemOnClick =
+          if x.selectable
+          then [onClick context.actions (Select x.params.id)]
+          else []
+
         elemHtml =
-          li' { class = "list-group-item" } (List.concat [indentElems, folderGlyphicon, glyphicon, [contentWrap [content]]])
+          Html.li (List.append [ elemClass ] elemOnClick) (List.concat [indentView indent, folderGlyphiconHtml, glyphiconHtml, [contentWrap [contentHtml]]])
 
         childrenHtml =
-          if x.hasChildren && x.expanded
-          then Maybe.withDefault [] (Maybe.map (List.concatMap (viewTreeItem (indent + 1))) x.children)
+          if x.expandable && x.expanded
+          then
+            item.children
+              |> List.concatMap (viewTree (indent + 1))
           else []
                       
       in
         (elemHtml :: childrenHtml)
             
   in
-    ul' { class = "list-group treeview" } (List.concatMap (viewTreeItem 0) model.elements)
+    ul' { class = "list-group treeview" } (List.concatMap (viewTree 0) model)
 
 
-update : Action a b -> TreeModel a b -> (TreeModel a b, Effects (Action a b))
+indentView : Int -> List Html
+indentView indent =
+  List.repeat indent (span' { class = "indent" } [])
+
+
+folderGlyphiconView : ViewContext a b -> TreeItemModel a b -> Maybe Html
+folderGlyphiconView context item =
+  if not item.expandable
+  then Nothing
+  else
+    let
+      glyphiconClass =
+        if item.expanded
+        then "minus"
+        else "plus"
+
+      -- renderFolderGlyphicon : b -> Html
+      renderFolderGlyphicon id =
+        Html.span [ class' "expand-folder", onClick context.expand id ] [ glyphicon_ glyphiconClass, Html.text " " ]
+    in
+      Just (renderFolderGlyphicon item.params.id)
+
+
+update : Action b -> TreeModel a b -> TreeModel a b
 update action model =
   case action of
-    ToggleExpanded id ->
+    Select id ->
       let
-        -- itemToggleExpanded : TreeItemModel a b -> (TreeItemModel a b, Maybe (Effects Action))
-        itemToggleExpanded (TreeItemModel element) =
-          if element.id == Just id
-          then
-            let
-              (eff, newChildren) =
-                if element.expanded || not (Maybe.withDefault True (Maybe.map List.isEmpty element.children))
-                then
-                  (Nothing, element.children)
-                else
-                  (model.loadChildren id
-                     |> Task.map (ChildrenLoaded id)
-                     |> Effects.task
-                     |> Just, Just [loadingPlaceholderTreeItemModel model.loadingPlaceholder])
-            in
-              (TreeItemModel { element |
-                               expanded <- not element.expanded
-                             , children <- newChildren
-                             }, eff)
-          else
-            let
-              -- childrenElementsAndEffects : Maybe (List (TreeItemModel a b, Maybe (Effects Action)))
-              childrenElementsAndEffects =
-                Maybe.map (List.map itemToggleExpanded) element.children
-
-              -- newChildren : Maybe (List (TreeItemModel a b))
-              newChildren =
-                Maybe.map (List.map fst) childrenElementsAndEffects
-
-              -- childrenEff : Maybe (Effects Action)
-              childrenEff =
-                childrenElementsAndEffects `Maybe.andThen` (\x -> Maybe.oneOf (List.map snd x))
-            in
-              (TreeItemModel { element |
-                               children <- newChildren
-                             }, childrenEff)
-
-        elementsAndEffects =
-          List.map itemToggleExpanded model.elements
-
-        newModel =
-          { model | elements <- List.map fst elementsAndEffects }
-
-        newEffects =
-          List.map snd elementsAndEffects
-            |> Maybe.oneOf
-            |> Maybe.withDefault Effects.none
-                   
-      in
-        (newModel, newEffects)
-        
-    ChildrenLoaded id children ->
-      let
-        itemChildrenLoaded (TreeItemModel element) =
-          let
-            newChildren =
-              if element.id == Just id
-              then Just children
-              else
-                Maybe.map (List.map itemChildrenLoaded) element.children
-          in
-            TreeItemModel { element | children <- newChildren }
-        
-        newModel =
-          { model | elements <- List.map itemChildrenLoaded model.elements }
+        -- selectTree : Tree.Tree (TreeItemModel a b) -> Tree.Tree (TreeItemModel a b)
+        selectItem item =
+          if item.params.id == id
+          then { item | selected <- True }
+          else { item | selected <- False }
       in 
-        (newModel, Effects.none)
+        List.map (Tree.map selectItem) model
