@@ -120,7 +120,19 @@ update action model =
             then
               Tree.Tree { tree | children <- List.map (processTree itemModels) tree.children}
             else
-              Tree.Tree { tree | children <- List.map treeModelSingleton itemModels }
+              let
+                oldParams = oldData.params
+                oldContent = oldParams.content
+                newContent =
+                  case oldContent of
+                    OneDriveFolderModel f ->
+                      OneDriveFolderModel { f | childrenLoaded <- True }
+                    _ ->
+                      oldContent
+                newParams = { oldParams | content <- newContent }
+                newData = { oldData | params <- newParams }
+              in 
+                Tree.Tree { tree | children <- List.map treeModelSingleton itemModels, data <- newData }
 
         newTree =
           Result.toMaybe result
