@@ -3,6 +3,7 @@ module Main where
 import Effects exposing (Never, Effects)
 import EffectsExtensions as Effects
 import Html exposing (Html)
+import Html.Attributes as A
 import Html.Shorthand exposing (..)
 import MasterPage
 import String
@@ -136,18 +137,16 @@ update action model =
         processTreeExpandItem (Tree.Tree tree) =
           let
             oldData = tree.data
-          in 
-            if oldData.params.id /= id
-            then
-              let
-                newChildrenEff = Effects.mapM processTreeExpandItem tree.children
-              in
-                (Tree.Tree { tree | children <- fst newChildrenEff }, snd newChildrenEff)
-            else
-              if oldData.expanded
-              then
+          in
+            if
+              | oldData.params.id /= id ->
+                let
+                  newChildrenEff = Effects.mapM processTreeExpandItem tree.children
+                in
+                  (Tree.Tree { tree | children <- fst newChildrenEff }, snd newChildrenEff)
+              | oldData.expanded ->
                 (Tree.Tree { tree | data <- { oldData | expanded <- False } }, Effects.none)
-              else
+              | otherwise ->
                 case oldData.params.content of
                   OneDriveFolderModel folderModel ->
                     let
@@ -175,7 +174,6 @@ update action model =
                       
                   _ ->
                     (Tree.Tree tree, Effects.none)
-                
 
         -- newTreeEff : (OneDriveTreeModel, Effects Action)
         newTreeEff =
@@ -284,7 +282,7 @@ viewOneDriveItemModel : OneDriveItemModel -> Html
 viewOneDriveItemModel model =
   case model of
     Loading ->
-      Html.text "Loading..."
+      Html.img [ A.class "center-block text-center", A.src "/images/ajax-loader.gif" ] []
     OneDriveFileModel x ->
       Html.text x.name
     OneDriveFolderModel x ->
