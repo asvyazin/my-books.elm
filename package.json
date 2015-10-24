@@ -4,6 +4,7 @@
   "description": "Experiments with Elm.",
   "author": "Alexander Svyazin <guybrush@live.ru>",
   "devDependencies": {
+    "elm": "^2.0.0",
     "jspm": "^0.16.11"
   },
   "jspm": {
@@ -19,5 +20,11 @@
       "babel-runtime": "npm:babel-runtime@^5.8.24",
       "core-js": "npm:core-js@^1.1.4"
     }
+  },
+  "scripts": {
+      "jspm": "jspm",
+      "elm-make": "elm-make",
+      "elm-reactor": "elm-reactor",
+      "elm-package": "elm-package"
   }
 }
