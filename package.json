@@ -22,9 +22,9 @@
     }
   },
   "scripts": {
-      "jspm": "jspm",
-      "elm-make": "elm-make",
-      "elm-reactor": "elm-reactor",
-      "elm-package": "elm-package"
+    "jspm": "jspm",
+    "elm-make": "elm-make",
+    "elm-reactor": "elm-reactor",
+    "elm-package": "elm-package"
   }
 }
