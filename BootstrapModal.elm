@@ -12,9 +12,9 @@ type BackdropType = Yes | No | Static
 
 
 type alias ModalParams =
-  { backdrop : Maybe BackdropType
+  { id : String
+  , backdrop : Maybe BackdropType
   , keyboard : Maybe Bool
-  , show : Maybe Bool
   , remote : Maybe String
   }
 
@@ -61,23 +61,23 @@ modalFull options =
                   [ Maybe.map renderBackdrop options.params.backdrop
                   , Maybe.map renderKeyboard options.params.keyboard
                   , Maybe.map A.dataRemote options.params.remote
-                  , Maybe.map A.dataShow (Debug.log "showModal" options.params.show)
                   ]
              
-  in 
-    Html.div ([A.class "modal fade", A.tabindex -1, A.role "dialog", A.ariaHidden True] ++ modalParams) [dialog]
+  in
+    Html.div ([A.id options.params.id, A.class "modal fade", A.tabindex -1, A.role "dialog", A.ariaHidden True] ++ modalParams) [dialog]
 
 
 type alias BasicModalOptions =
-  { title : String
+  { id : String
+  , title : String
   , closable : Bool
   , body : List Html
   , footer : List Html 
   }
 
 
-modalBasic : Bool -> BasicModalOptions -> Html
-modalBasic show options =
+modalBasic : BasicModalOptions -> Html
+modalBasic options =
   let
     modalHeader = Html.h4 [A.class "modal-title"] [Html.text options.title]
 
@@ -91,8 +91,8 @@ modalBasic show options =
     , body = options.body
     , footer = options.footer
     , params =
-      { remote = Nothing
-      , show = Just show
+      { id = options.id
+      , remote = Nothing
       , keyboard = if options.closable then Nothing else Just False
       , backdrop = if options.closable then Nothing else Just Static
       }

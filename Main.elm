@@ -16,7 +16,6 @@ import OneDriveDirectoryChooserModal
 
 type alias DirectoryChooserModel =
   { modal : OneDriveDirectoryChooserModal.Model
-  , showModal : Bool
   , directory : Maybe String
   }
 
@@ -33,7 +32,9 @@ type Action
   | DirectoryChooserAction OneDriveDirectoryChooserModal.Action
   | AccessTokenReceived (Maybe String)
   | ShowDirectoryChooser
+  | ShowDirectoryChooserComplete
   | HideDirectoryChooser
+  | HideDirectoryChooserComplete
 
 
 port accessToken : Signal (Maybe String)
@@ -76,25 +77,24 @@ update action model =
             (newModal, eff) = OneDriveDirectoryChooserModal.update chooserAction chooser.modal
           in
             (Just {chooser | modal <- newModal}, eff)
-        
+
         (newChooser, directoryChooserEffects) =
           Maybe.map updateChooser model.directoryChooser
                |> Maybe.withDefault (model.directoryChooser, Effects.none)
       in
         ({ model | directoryChooser <- newChooser }, Effects.map DirectoryChooserAction directoryChooserEffects)
-           
+
     AccessTokenReceived maybeAccessToken ->
       Maybe.map (\token ->
                    let
                      (headerModel, headerEffects) =
                        Header.update (Header.AccessTokenReceived (Just token)) model.header
-                             
+
                      (chooser, chooserEffects) =
                        OneDriveDirectoryChooserModal.init token
 
                      directoryChooser =
                        { modal = chooser
-                       , showModal = False
                        , directory = Nothing
                        }
                    in
@@ -106,18 +106,20 @@ update action model =
         |> Maybe.withDefault (model, Effects.none)
 
     ShowDirectoryChooser ->
-      let
-        updateChooser chooser =
-          {chooser | showModal <- True}
-      in
-        ({model | directoryChooser <- Maybe.map updateChooser model.directoryChooser}, Effects.none)
+      (model, OneDriveDirectoryChooserModal.show
+         |> Effects.task
+         |> Effects.map (always ShowDirectoryChooserComplete))
 
-    HideDirectoryChooser ->
-      let
-        updateChooser chooser =
-          {chooser | showModal <- False}
-      in
-        ({model | directoryChooser <- Maybe.map updateChooser model.directoryChooser}, Effects.none)
+    ShowDirectoryChooserComplete ->
+      (model, Effects.none)
+
+    HideDirectoryChooser -> 
+      (model, OneDriveDirectoryChooserModal.hide
+         |> Effects.task
+         |> Effects.map (always HideDirectoryChooserComplete))
+
+    HideDirectoryChooserComplete ->
+      (model, Effects.none)
 
 
 view : Signal.Address Action -> Model -> Html
@@ -134,17 +136,17 @@ view address model =
 
     linkHtml =
       Html.div [A.class "col-md-offset-5 col-md-2"] [button]
-    
+
     elems =
       M.filterJust [maybeChooserHtml, Just linkHtml]
-            
-  in 
+
+  in
     MasterPage.view (Header.view model.header :: elems)
 
 
 viewChooser : Signal.Address Action -> DirectoryChooserModel -> Html
 viewChooser address model =
-  OneDriveDirectoryChooserModal.view (Signal.forwardTo address DirectoryChooserAction) model.showModal model.modal
+  OneDriveDirectoryChooserModal.view (Signal.forwardTo address DirectoryChooserAction) model.modal
 
 
 main : Signal Html
@@ -155,3 +157,13 @@ main =
 port tasks : Signal (Task Never ())
 port tasks =
   app.tasks
+
+
+port showOneDriveDirectoryChooserModal : Signal String
+port showOneDriveDirectoryChooserModal =
+  OneDriveDirectoryChooserModal.showSignal
+
+
+port hideOneDriveDirectoryChooserModal : Signal String
+port hideOneDriveDirectoryChooserModal =
+  OneDriveDirectoryChooserModal.hideSignal

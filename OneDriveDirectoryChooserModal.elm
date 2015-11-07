@@ -46,23 +46,19 @@ type Action
 
 
 init : String -> (Model, Effects Action)
-init accessToken = ({ tree = Nothing, accessToken = accessToken}, getOneDriveTree accessToken)
+init accessToken =
+  ( { tree = Nothing, accessToken = accessToken}, getOneDriveTree accessToken )
 
 
 update : Action -> Model -> (Model, Effects Action)
 update action model =
   case action of
     TreeAction treeAction ->
-      Maybe.map (TreeView.update treeAction) model.tree
-        |> Maybe.map (\ treeModel ->
-                        ({ model | tree <- Just treeModel }, Effects.none) )
-        |> Maybe.withDefault (model, Effects.none)
+      ({ model | tree <- Maybe.map (TreeView.update treeAction) model.tree }, Effects.none)
 
     OneDriveTreeReceived result ->
-      Result.toMaybe result
-        |> Maybe.map (\tree -> ({ model | tree <- Just tree }, Effects.none))
-        |> Maybe.withDefault (model, Effects.none)
-
+      ({ model | tree <- Result.toMaybe result }, Effects.none)
+ 
     OneDriveSubtreeReceived id result ->
       let
         processSubtree itemModels =
@@ -90,7 +86,7 @@ update action model =
                       oldContent
                 newParams = { oldParams | content <- newContent }
                 newData = { oldData | params <- newParams }
-              in 
+              in
                 Tree.Tree { tree | children <- List.map treeModelSingleton itemModels, data <- newData }
 
         newTree =
@@ -122,7 +118,7 @@ update action model =
                   OneDriveFolderModel folderModel ->
                     let
                       newData = { oldData | expanded <- True }
-                    in 
+                    in
                       if folderModel.childrenLoaded
                       then
                         (Tree.Tree { tree | data <- newData }, Effects.none)
@@ -140,9 +136,9 @@ update action model =
 
                           t =
                             Tree.Tree { data = data, children = [] }
-                        in 
+                        in
                           (Tree.Tree { tree | children <- [ t ], data <- newData }, loadChildren model.accessToken id)
-                      
+
                   _ ->
                     (Tree.Tree tree, Effects.none)
 
@@ -197,13 +193,13 @@ convertOneDriveItem parentPath item =
       if String.endsWith parentPath "/"
       then parentPath
       else parentPath ++ "/"
-    
+
     path =
       normalizedParentPath ++ item.name
 
     id = Just path
-  
-  in 
+
+  in
     case item.folder of
       Nothing ->
         TreeView.item
@@ -229,15 +225,15 @@ convertOneDriveItem parentPath item =
                   }
 
 
-view : Signal.Address Action -> Bool -> Model -> Html
-view address show model =
+view : Signal.Address Action -> Model -> Html
+view address model =
   let
     viewContext =
       { actions = (Signal.forwardTo address TreeAction)
       , expand = (Signal.forwardTo address OneDriveTreeExpandItem)
       , viewContent = viewOneDriveItemModel
       }
-    
+
     treeHtml =
       model.tree
         |> Maybe.map (TreeView.view viewContext)
@@ -247,15 +243,20 @@ view address show model =
 
     saveButton =
       Html.button [A.type' "button", A.class "btn btn-primary"] [Html.text "Save"]
-          
+
   in
-    BootstrapModal.modalBasic show
-                    { title = "Choose directory"
+    BootstrapModal.modalBasic
+                    { id = chooserId
+                    , title = "Choose directory"
                     , closable = True
                     , body = M.toList treeHtml
                     , footer = [closeButton, saveButton]
                     }
-  
+
+
+chooserId : String
+chooserId = "onedrive-folder-chooser"
+
 
 viewOneDriveItemModel : OneDriveItemModel -> Html
 viewOneDriveItemModel model =
@@ -269,3 +270,27 @@ viewOneDriveItemModel model =
         badgeHtml = span' { class = "badge pull-right" } [Html.text (toString x.childrenCount)]
       in
         span_ [Html.text x.name, badgeHtml]
+
+
+showModalMailbox : Signal.Mailbox String
+showModalMailbox = Signal.mailbox ""
+
+
+hideModalMailbox : Signal.Mailbox String
+hideModalMailbox = Signal.mailbox ""
+
+
+showSignal : Signal String
+showSignal = showModalMailbox.signal
+
+
+hideSignal : Signal String
+hideSignal = hideModalMailbox.signal
+
+
+show : Task Never ()
+show = Signal.send showModalMailbox.address chooserId
+
+
+hide : Task Never ()
+hide = Signal.send hideModalMailbox.address chooserId
