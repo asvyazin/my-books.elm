@@ -167,3 +167,8 @@ port showOneDriveDirectoryChooserModal =
 port hideOneDriveDirectoryChooserModal : Signal String
 port hideOneDriveDirectoryChooserModal =
   OneDriveDirectoryChooserModal.hideSignal
+
+
+port saveFolder : Signal (Maybe String)
+port saveFolder =
+  OneDriveDirectoryChooserModal.saveFolderSignal

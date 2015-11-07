@@ -5,6 +5,7 @@ import Effects exposing (Effects, Never)
 import EffectsExtensions as Effects
 import Html exposing (Html)
 import Html.Attributes as A
+import Html.Events as A
 import Html.Shorthand exposing (..)
 import MaybeExtensions as M
 import MyAttributes as A
@@ -242,7 +243,7 @@ view address model =
       Html.button [A.type' "button", A.class "btn btn-default", A.dataDismiss "modal"] [Html.text "Close"]
 
     saveButton =
-      Html.button [A.type' "button", A.class "btn btn-primary"] [Html.text "Save"]
+      Html.button [A.type' "button", A.class "btn btn-primary", A.onClick saveFolderMailbox.address (getFolder model), A.dataDismiss "modal" ] [Html.text "Save"]
 
   in
     BootstrapModal.modalBasic
@@ -252,6 +253,34 @@ view address model =
                     , body = M.toList treeHtml
                     , footer = [closeButton, saveButton]
                     }
+
+
+saveFolderMailbox : Signal.Mailbox (Maybe String)
+saveFolderMailbox = Signal.mailbox Nothing
+
+
+saveFolderSignal : Signal (Maybe String)
+saveFolderSignal = saveFolderMailbox.signal
+
+
+getFolder : Model -> Maybe String
+getFolder model =
+  model.tree `Maybe.andThen` getSelectedFolderFromForest
+
+
+getSelectedFolderFromForest : OneDriveTreeModel -> Maybe String
+getSelectedFolderFromForest model =
+  List.map getSelectedFolderFromTree model
+    |> Maybe.oneOf
+
+
+getSelectedFolderFromTree : Tree.Tree (OneDriveTreeItemModel) -> Maybe String
+getSelectedFolderFromTree (Tree.Tree tree) =
+  if tree.data.selected
+  then tree.data.params.id
+  else
+    List.map getSelectedFolderFromTree tree.children
+      |> Maybe.oneOf
 
 
 chooserId : String
