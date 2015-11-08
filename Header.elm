@@ -2,11 +2,13 @@ module Header (Model, Action(..), init, update, view) where
 
 
 import Effects exposing (Effects)
+import EffectsExtensions as Effects
 import Html exposing (..)
 import Html.Attributes exposing (class)
 import Html.Shorthand exposing (..)
 import Http
 import Json.Decode as Json
+import MaybeExtensions as Maybe
 import MyAttributes
 import Task
 
@@ -26,48 +28,57 @@ type Action =
 update : Action -> Model -> (Model, Effects Action)
 update action model =
   case action of
-    AccessTokenReceived accessToken -> (model, getUserName accessToken)
-    UserNameReceived user -> ({model | userName <- Just user}, Effects.none)
-    ErrorReceived error -> ({model | error <- Just error}, Effects.none)
+    AccessTokenReceived accessToken ->
+      (model, getUserName accessToken)
+    UserNameReceived user ->
+      Effects.noFx {model | userName <- Just user}
+    ErrorReceived error ->
+      Effects.noFx {model | error <- Just error}
 
 
 navbarDefault_ : List Html -> Html
-navbarDefault_ = nav [ class "navbar navbar-default", MyAttributes.role "navigation" ]
-
-
-maybeToList : Maybe a -> List a
-maybeToList xx =
-  case xx of
-    Nothing -> []
-    Just x -> [x]
+navbarDefault_ =
+  nav [ class "navbar navbar-default", MyAttributes.role "navigation" ]
                  
                  
 view : Model -> Html
-view model = navbarDefault_
-  [ div' { class = "navbar-header navbar-brand" }
-    [text model.title]
-  , ul' { class = "nav navbar-nav" }
-    [
-     li_
-         [ a_ "/login.html" "Get new access token" ]
-    ]
-  , ul' { class = "nav navbar-nav navbar-right" }
-    (List.append
-      (maybeToList (Maybe.map renderUserName model.userName))
-      (maybeToList (Maybe.map renderError model.error)))
-  ]
+view model =
+  let
+    brand =
+      div' { class = "navbar-header navbar-brand" } [ text model.title ]
+           
+    loginLink =
+      ul' { class = "nav navbar-nav" }
+            [ li_ [ a_ "/login.html" "Get new access token" ] ]
+
+    userNameOrErrorElems =
+      Maybe.filterJust
+             [ Maybe.map renderUserName model.userName
+             , Maybe.map renderError model.error ]
+            
+    userNameOrError =
+      ul' { class = "nav navbar-nav navbar-right" } userNameOrErrorElems 
+
+  in
+    navbarDefault_ [ brand
+                   , loginLink
+                   , userNameOrError
+                   ]
 
 
 renderUserName : String -> Html
-renderUserName userName = li_ [ div' { class = "navbar-text" } [text userName] ]
+renderUserName userName =
+  li_ [ div' { class = "navbar-text" } [text userName] ]
 
 
 renderError : String -> Html
-renderError error = li_ [ div' { class = "alert alert-danger" } [text error] ]
+renderError error =
+  li_ [ div' { class = "alert alert-danger" } [text error] ]
 
 
 init : String -> (Model, Effects Action)
-init title = (Model title Nothing Nothing, Effects.none)
+init title =
+  (Model title Nothing Nothing, Effects.none)
 
 
 getUserName : Maybe String -> Effects Action
@@ -79,8 +90,7 @@ doGetUserName : String -> Effects Action
 doGetUserName accessToken =
   Http.get (Json.at ["name"] Json.string) (userNameUrl accessToken)
     |> Task.toResult
-    |> Task.map (Result.formatError convertError)
-    |> Task.map toAction
+    |> Task.map (Result.formatError convertError >> toAction)
     |> Effects.task
 
 
@@ -99,4 +109,5 @@ toAction result =
                          
 
 userNameUrl : String -> String
-userNameUrl accessToken = Http.url "https://apis.live.net/v5.0/me" [("access_token", accessToken)]
+userNameUrl accessToken =
+  Http.url "https://apis.live.net/v5.0/me" [("access_token", accessToken)]

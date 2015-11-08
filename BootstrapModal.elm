@@ -55,7 +55,6 @@ modalFull options =
         keyboardType = if keyboard then "true" else "false"
       in
         A.dataKeyboard keyboardType
-       
 
     modalParams = M.filterJust
                   [ Maybe.map renderBackdrop options.params.backdrop

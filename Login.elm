@@ -15,7 +15,8 @@ import MasterPage
 type alias ButtonModel =
   { clientId : String
   , scope : String
-  , redirectURI : String }
+  , redirectURI : String
+  }
 
 
 loginButton : ButtonModel -> Html
@@ -29,7 +30,8 @@ loginButton model =
 
 
 glyphiconCloud : Html
-glyphiconCloud = span' { class = "glyphicon glyphicon-cloud" } []
+glyphiconCloud =
+  span' { class = "glyphicon glyphicon-cloud" } []
 
 
 loginUrl : ButtonModel -> String
@@ -39,7 +41,8 @@ loginUrl model =
         [ ("client_id", model.clientId)
         , ("scope", model.scope)
         , ("redirect_uri", model.redirectURI)
-        , ("response_type", "token") ]
+        , ("response_type", "token")
+        ]
 
 
 loginPage : Header.Model -> Html
@@ -59,7 +62,12 @@ loginPage model =
   in MasterPage.view [Header.view model, buttonContainer]
 
 
-app = start { init = (Header.init "Title"), update = Header.update, view = view, inputs = [] }
+app =
+  start { init = (Header.init "Title")
+        , update = Header.update
+        , view = view
+        , inputs = []
+        }
 
 
 main : Signal Html
@@ -68,7 +76,8 @@ main =
 
 
 view : Signal.Address Header.Action -> Header.Model -> Html
-view _ model = loginPage model
+view _ model =
+  loginPage model
 
 
 port tasks : Signal (Task Never ())

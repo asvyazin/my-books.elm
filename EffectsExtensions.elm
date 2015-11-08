@@ -21,3 +21,8 @@ bind (xa, eff1) f =
     (xb, eff2) = f xa
   in
     (xb, Effects.batch [eff1, eff2])
+
+
+noFx : model -> (model, Effects a)
+noFx model =
+    (model, Effects.none)
